@@ -1,44 +1,29 @@
 import streamlit as st
-from easynmt import EasyNMT
-from pathlib import Path
-from pysubs2 import SSAFile,SSAEvent
+from pysubs2 import SSAFile, SSAEvent
+from googletrans import Translator
 
-model = EasyNMT('opus-mt')
+# 创建用户界面
+uploaded_file = st.file_uploader("Upload SRT file", type="srt")
+languages = ["Japanese", "Spanish", "French", "English", "Korean"]
+selected_languages = st.multiselect("Select languages to translate", languages, default=languages)
 
-TARGET_LANGS = ['ja', 'es', 'fr', 'en', 'ko']
-
-def translate(sent, source, target):
-    return model.translate(sent, source_lang=source, target_lang=target)
-
-st.sidebar.markdown("## 字幕翻译器")
-st.sidebar.text("\n")
-st.sidebar.markdown("目标语言：日语、西班牙语、法语、英语、韩语")
-st.sidebar.text("\n")
-st.sidebar.text("\n")
-st.sidebar.markdown('Powered by EasyNMT and Streamlit')
-
-input_subtitle = st.file_uploader("请上传SRT字幕文件", type='srt')
-
-if input_subtitle is not None:
-    input_content = SSAFile.from_string(input_subtitle.read().decode('utf-8'))
-    st.write('上传成功！')
-
-    translated_subtitles = {}
-    for lang in TARGET_LANGS:
-        st.write(f'开始翻译为{lang}...')
+if uploaded_file is not None:
+    # 读取上传的SRT文件
+    subs = SSAFile.from_string(uploaded_file.getvalue().decode("utf-8"))
+    
+    for lang in selected_languages:
+        # 使用Google Translate API将字幕翻译成其他语言
+        translator = Translator(service_urls=["translate.google.com"])
         translated_subs = SSAFile()
-        for event in input_content.events:
-            translated_text = translate(event.text, 'zh', lang)
-            translated_subs.events.append(
-                SSAEvent(start=event.start,
-                         end=event.end,
-                         text=translated_text))
-        translated_subtitles[lang] = translated_subs
-        st.write(f'{lang}翻译完成！')
-
-    if st.button("下载翻译后的字幕文件"):
-        for lang in TARGET_LANGS:
-            output_file_name = f"{Path(input_subtitle.name).stem}-{lang}.srt"
-            with open(output_file_name, 'w') as f:
-                f.write(translated_subtitles[lang].to_string())
-                st.markdown(f'[点此下载 {output_file_name}]({output_file_name})')
+        for event in subs:
+            translated_event = SSAEvent()
+            translated_event.start = event.start
+            translated_event.end = event.end
+            translated_event.text = translator.translate(event.text, dest=lang.lower()).text
+            translated_subs.append(translated_event)
+        
+        # 保存单独的SRT文件
+        with open(f"{lang.lower()}.srt", "w", encoding="utf-8") as f:
+            f.write(translated_subs.to_string())
+        
+    st.success("Translation and saving complete!")
