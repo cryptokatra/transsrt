@@ -1,70 +1,78 @@
 import streamlit as st
-import os
-from googletrans import Translator
-from pysrt import SubRipFile
+from easynmt import EasyNMT
+model = EasyNMT('opus-mt')
 
-# 定義翻譯功能
-def translate_srt_file(srt_file_path, language_codes):
-    # 讀取 SRT 文件
-    with open('0.srt', 'r', encoding='utf-8') as f:
-        srt = SubRipFile().from_string(f.read())
 
-    # 翻譯每一條字幕
-    for subtitle in srt:
-        for lang in language_codes:
-            # 翻譯
-            translator = Translator()
-            translation = translator.translate(subtitle.text, dest=lang).text
-            # 將翻譯添加到字幕中
-            if lang == 'ja':
-                subtitle.text_ja = translation
-            elif lang == 'es':
-                subtitle.text_es = translation
-            elif lang == 'fr':
-                subtitle.text_fr = translation
-            elif lang == 'en':
-                subtitle.text_en = translation
-            elif lang == 'ko':
-                subtitle.text_ko = translation
+LANGS = [('en', 'es'), ('en', 'fr'), ('en', 'de'), ('en', 'ar'), ('en', 'tr'), ('en', 'ko')]
 
-    # 將翻譯后的字幕保存到新文件
-    srt.save('0_ja.srt', encoding='utf-8-sig', eol='\r\n')
-    srt.save('0_es.srt', encoding='utf-8-sig', eol='\r\n')
-    srt.save('0_fr.srt', encoding='utf-8-sig', eol='\r\n')
-    srt.save('0_en.srt', encoding='utf-8-sig', eol='\r\n')
-    srt.save('0_ko.srt', encoding='utf-8-sig', eol='\r\n')
+def translate(sent, source, target):
+	return model.translate(sent, source_lang=source, target_lang=target)
 
-# 定義可選擇的語言
-languages = {'日文': 'ja', '西班牙文': 'es', '法文': 'fr', '英文': 'en', '韓文': 'ko'}
+def display_props():
+	st.markdown("## Subtitle Translator")
+	st.sidebar.markdown('## Possible Translations')
+	st.sidebar.text("\n")
+	st.sidebar.markdown("* English _(en)_ - Spanish _(es)_")
+	st.sidebar.markdown("* English _(en)_ - French _(fr)_")
+	st.sidebar.markdown("* English _(en)_ - German _(de)_")
+	st.sidebar.markdown("* English _(en)_ - Arabic _(ar)_")
+	st.sidebar.markdown("* English _(en)_ - Turkish _(tr)_")
+	st.sidebar.markdown("* English _(en)_- Korean _(ko)_")
+	st.sidebar.text("\n")
+	st.sidebar.text("\n")
+	st.sidebar.markdown('Powered by: [EasyNMT](https://pypi.org/project/EasyNMT/0.0.7/) and [Streamlit](https://www.streamlit.io/)')
+	return
+display_props()
 
-# Streamlit 界面設計
-def app():
-    st.title('SRT 字幕翻譯器')
 
-    # 上傳本機文件
-    srt_file = st.file_uploader('上傳 SRT 文件（格式必須為 SRT）', type='srt')
+source_lang_content = st.file_uploader("",type=['srt'])
 
-    if srt_file is not None:
-        # 選擇要翻譯的語言
-        st.write('選擇要翻譯的語言（可以多選）：')
-        lang_choices = st.multiselect('語言', list(languages.keys()), list(languages.keys()))
+if source_lang_content is not None:
+	all_data = [line for line in source_lang_content]
+	num_lines = sum(1 for line in all_data)
+	step = int(num_lines/100)
 
-        # 當用戶點擊翻譯按鈕時
-        if st.button('翻譯'):
-            # 獲取語言代碼
-            language_codes = [languages[lang] for lang in lang_choices]
+	for idx1, lang_pair in enumerate(LANGS):
+		if idx1==0:
+			st.markdown('Processing  __{0}__  to  __{1}__'.format(lang_pair[0], lang_pair[1]))
+			outfile=open('{0}_{1}.srt'.format(lang_pair[0], lang_pair[1]), 'w')
+		if idx1==1:
+			st.markdown('Processing  __{0}__  to  __{1}__'.format(lang_pair[0], lang_pair[1]))
+			outfile=open('{0}_{1}.srt'.format(lang_pair[0], lang_pair[1]), 'w')
+		if idx1==2:
+			st.markdown('Processing  __{0}__  to  __{1}__'.format(lang_pair[0], lang_pair[1]))
+			outfile=open('{0}_{1}.srt'.format(lang_pair[0], lang_pair[1]), 'w')
+		if idx1==3:
+			st.markdown('Processing  __{0}__  to  __{1}__'.format(lang_pair[0], lang_pair[1]))
+			outfile=open('{0}_{1}.srt'.format(lang_pair[0], lang_pair[1]), 'w')
+		if idx1==4:
+			st.markdown('Processing  __{0}__  to  __{1}__'.format(lang_pair[0], lang_pair[1]))
+			outfile=open('{0}_{1}.srt'.format(lang_pair[0], lang_pair[1]), 'w')
+		if idx1==5:
+			st.markdown('Processing  __{0}__  to  __{1}__'.format(lang_pair[0], lang_pair[1]))
+			outfile=open('{0}_{1}.srt'.format(lang_pair[0], lang_pair[1]), 'w')
+		if idx1==6:
+			st.markdown('Processing  __{0}__  to  __{1}__'.format(lang_pair[0], lang_pair[1]))
+			outfile=open('{0}_{1}.srt'.format(lang_pair[0], lang_pair[1]), 'w')
 
-            # 確認文件是否存在
-            if os.path.exists(srt_file.name):
-                # 翻譯文件
-                translate_srt_file(srt_file.name, language_codes)
+		my_bar = st.progress(0)
+		big_srt_text = ""
+		v=0
+		for idx2, line in enumerate(all_data):
+			print (idx2, v, num_lines, step)
+			line = str(line)
+			if v!=100:
+				if idx2%step==0:
+					v=v+1
+					my_bar.progress(v)
 
-                # 顯示翻譯成功信息
-                st.success('SRT 文件已經翻譯成功，請檢查本機文件夾中的文件')
-            else:
-                # 顯示錯誤信息
-                st.error('SRT 文件不存在')
+			if line[0].isnumeric():
+				big_srt_text += line
+			else:
+				converted_line = translate(line, lang_pair[0], lang_pair[1])
+				big_srt_text += converted_line
 
-# 運行應用程序
-if __name__ == '__main__':
-    app()
+		outfile.write(big_srt_text)
+		if idx1==len(LANGS)-1:
+			st.markdown('### Translations Done!!')
+			st.write('Files saved on Disk')
