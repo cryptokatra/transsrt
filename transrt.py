@@ -1,58 +1,65 @@
 import streamlit as st
-import os
 from googletrans import Translator
 from pathlib import Path
-
-# 设置语言选项
-LANGUAGES = {
-    'ja': '日本語',
-    'es': 'Español',
-    'fr': 'Français',
-    'en': 'English',
-    'ko': '한국어'
-}
-
-# 定义翻译函数
-def translate_srt(text, dest):
-    translator = Translator()
-    return translator.translate(text, dest=dest).text
-
-# 定义保存函数
-def save_srt(text, filename):
-    with open(filename, 'w') as f:
-        f.write(text)
-
-# 显示上传文件按钮
-uploaded_file = st.file_uploader("选择一个SRT文件", type=['srt'])
-
-# 显示语言选项 checkbox
-selected_languages = st.multiselect("选择要翻译的语言（默认全选）", LANGUAGES.values(), default=LANGUAGES.values())
-
-# 显示翻译和保存按钮
-if st.button("翻译并保存"):
-    if uploaded_file is not None:
-        # 读取文件内容
-        file_contents = uploaded_file.read().decode('utf-8')
-
-        # 分割为多个字幕
-        subtitles = file_contents.split('\n\n')
-
-        # 遍历每个字幕
-        for i, subtitle in enumerate(subtitles):
-            # 分割为三行
-            lines = subtitle.split('\n')
-            # 第一行是序号，第二行是时间范围，第三行是文本内容
-            text = lines[2]
-            # 遍历所有选中的语言
-            for lang, name in LANGUAGES.items():
-                if name in selected_languages:
-                    # 翻译文本
-                    translated_text = translate_srt(text, lang)
-                    # 保存到文件
-                    save_srt(translated_text, Path(f"{os.path.splitext(uploaded_file.name)[0]}_{i}_{lang}.srt"))
-    
-        # 显示成功消息
-        st.success("字幕翻译并保存成功")
+ # 根据选择的语言返回对应的语言代码
+def get_language_code(language):
+    if language == '日本語':
+        return 'ja'
+    elif language == 'Español':
+        return 'es'
+    elif language == 'Français':
+        return 'fr'
+    elif language == 'English':
+        return 'en'
+    elif language == '한국어':
+        return 'ko'
     else:
-        # 如果没有选择文件，显示错误消息
-        st.error("请先选择一个SRT文件")
+        return None
+ # 翻译srt文件
+def translate_srt_file(srt_file_path, language_codes):
+    with open(srt_file_path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+     translator = Translator()
+    for i in range(len(lines)):
+        # 判断是否为时间轴行
+        try:
+            int(lines[i])
+            is_time_line = True
+        except ValueError:
+            is_time_line = False
+         # 如果不是时间轴行，则进行翻译
+        if not is_time_line and lines[i] != '\n':
+            for language_code in language_codes:
+                translation = translator.translate(lines[i], src='zh-CN', dest=language_code)
+                lines[i] += f'\n{language_code}:{translation.text}\n'
+     # 保存翻译结果
+    for language_code in language_codes:
+        translated_file_path = str(srt_file_path)[:-4] + f'_{language_code}.srt'
+        with open(translated_file_path, 'w', encoding='utf-8') as f:
+            for line in lines:
+                if f':{language_code}' in line:
+                    f.write(line)
+                elif not f':en' in line:
+                    f.write(line)
+ # Streamlit app
+def app():
+    st.title('SRT文件翻译器')
+     # 文件上传
+    srt_file = st.file_uploader('选择要翻译的SRT文件', type=['srt'])
+    if srt_file is not None:
+        st.write('文件上传成功！')
+         # 选择要翻译的语言
+        language_list = ['日本語', 'Español', 'Français', 'English', '한국어']
+        selected_languages = st.multiselect('选择要翻译的语言', language_list, default=language_list)
+        language_codes = [get_language_code(language) for language in selected_languages]
+         # 翻译并保存文件
+        if st.button('翻译并保存文件'):
+            srt_file_path = Path(srt_file.name)
+            translate_srt_file(srt_file_path, language_codes)
+            st.write('文件翻译成功！')
+             # 显示保存的文件路径
+            for language_code in language_codes:
+                translated_file_path = str(srt_file_path)[:-4] + f'_{language_code}.srt'
+                st.write(f'{selected_languages[language_codes.index(language_code)]}翻译结果保存在：{translated_file_path}')
+ if __name__ == '__main__':
+    app()
