@@ -34,7 +34,7 @@ def app():
 
     if srt_file and st.button("翻译并保存"):
         # 将checkbox的值作为参数传递给translate_srt_file函数
-        language_codes = [lang_code for lang_code, selected in checkbox_state.items() if selected]
+        language_codes = [lang_code for lang_code in ["日文", "西班牙文", "法文", "英文", "韩文"] if lang_code in checkbox_state]
         # 执行翻译并保存
         translate_srt_file(srt_file.name, language_codes)
 
