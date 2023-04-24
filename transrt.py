@@ -6,7 +6,7 @@ from pysrt import SubRipFile
 # 定義翻譯功能
 def translate_srt_file(srt_file_path, language_codes):
     # 讀取 SRT 文件
-    with open(srt_file_path, 'r', encoding='utf-8') as f:
+    with open('0.srt', 'r', encoding='utf-8') as f:
         srt = SubRipFile().from_string(f.read())
 
     # 翻譯每一條字幕
