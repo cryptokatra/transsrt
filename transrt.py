@@ -32,7 +32,7 @@ selected_languages = st.multiselect("选择要翻译的语言（默认全选）"
 if st.button("翻译并保存"):
     if uploaded_file is not None:
         # 读取文件内容
-        file_contents = uploaded_file.read()
+        file_contents = uploaded_file.read().decode('utf-8')
 
         # 分割为多个字幕
         subtitles = file_contents.split('\n\n')
